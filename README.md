@@ -12,7 +12,7 @@ It's inspired by [mzp/sushibar](https://github.com/mzp/sushibar) and [pocke/sush
 
 ## How to Install
 
-You can install from [PowerShell Gallary](https://www.powershellgallery.com/packages/PSSushiBar/).
+You can install from [PowerShell Gallery](https://www.powershellgallery.com/packages/PSSushiBar/).
 
 ```ps1
 Install-Module -Name PSSushiBar -Scope CurrentUser
