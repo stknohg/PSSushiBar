@@ -3,7 +3,7 @@
 #
 @{
     GUID = 'c1720150-5512-4622-886a-79f08ada55d8'
-    ModuleVersion = '1.1'
+    ModuleVersion = '1.2'
     Description = '🍣 flows through the title bar.(This is a joke module.)'
 
     Author = 'stknohg'
