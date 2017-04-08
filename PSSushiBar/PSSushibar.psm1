@@ -17,6 +17,7 @@ if (-not (Test-Environment)) {
     Write-Warning "[PSSushiBar]This environment is not supported."
     return
 }
+
 $Script:Timer = New-Object System.Timers.Timer
 $Script:EventID = "_SushiBarTimer"
 $Script:PrevTitle = ""
@@ -32,6 +33,7 @@ $Script:SushiArray = (
     "            🍣  ",
     "              🍣"
 )
+
 <#
 .Synopsis
     Get sushi count.
@@ -40,20 +42,54 @@ function Global:Get-SushiCount {
     [CmdletBinding()]
     param()
     # Since this function is used in the elapsed event, the scope is global.
+    $MaxCount = 63 # Windows titlebar's max length is 1023
     $result = 0
     switch ($Host.Name) {
         "Windows PowerShell ISE Host" {
-            # Can't get window size on PowerShell ISE
+            # Can't get window size on PowerShell ISE, so use Buffersize.
             $result = [Math]::Ceiling($Host.UI.RawUI.BufferSize.Width / 8)
         }
+        "Visual Studio Code Host" {
+            # Can't get status bar size on vscode-powershell
+            # set fixed value tentatively.
+            $result = 8
+        }
         Default {
+            # Default (ConsoleHost)
             $result = [Math]::Ceiling($Host.UI.RawUI.WindowSize.Width / 8)
         }
     }
-    if ($result -gt 63) {
-        $result = 63 # titlebar's max length is 1023
+    if ($result -gt $MaxCount) {
+        $result = $MaxCount 
     }
     return $result
+}
+
+# private function
+function GetTitle {
+    switch ($Host.Name) {
+        "Visual Studio Code Host" {
+            # $psEditor don't support GetStatusBarMessage
+            return ""
+        }
+        Default {
+            return $Host.UI.RawUI.WindowTitle
+        }
+    }
+}
+
+# private function
+function SetTitle([string]$Title) {
+    switch ($Host.Name) {
+        "Visual Studio Code Host" {
+            if ($null -ne $psEditor) {
+                $psEditor.Window.SetStatusBarMessage($Title)
+            }
+        }
+        Default {
+            $Host.UI.RawUI.WindowTitle = $Title
+        }
+    }
 }
 
 <#
@@ -76,12 +112,12 @@ function Start-SushiBar {
     }
 
     # timer settings
-    $Script:PrevTitle = $Host.ui.RawUI.WindowTitle
+    $Script:PrevTitle = GetTitle
     $Script:Timer.Interval = if ($Interval -lt 200) {
-        200 
+        200
     }
     else {
-        $Interval 
+        $Interval
     }
 
     # timer elapsed action
@@ -92,7 +128,7 @@ function Start-SushiBar {
             $Script:CurrentSushiPosition = 8
             $Script:SushiCount = Get-SushiCount
         }
-        $Host.UI.RawUI.WindowTitle = $Event.MessageData[$Script:CurrentSushiPosition - 1] * $Script:SushiCount
+        & $Event.MessageData.SetTitle -Title ($Event.MessageData.SushiArray[$Script:CurrentSushiPosition - 1] * $Script:SushiCount)
         $Script:CurrentSushiPosition -= 1
     }
 
@@ -102,7 +138,10 @@ function Start-SushiBar {
         SourceIdentifier = $Script:EventID
         EventName = "Elapsed"
         Action = $action
-        MessageData = $Script:SushiArray
+        MessageData = @{
+            SetTitle = Get-Command SetTitle
+            SushiArray = $Script:SushiArray;
+        }
     }
     $event = Register-ObjectEvent @params
     Write-Verbose ("Register Elapsed Event (Id : {0}, Name : {1})" -f $event.Id, $event.Name)
@@ -126,6 +165,6 @@ function Stop-SushiBar {
     # stop timer and unregister event
     $Script:Timer.Stop()
     Unregister-Event $Script:EventID
-    $Host.UI.RawUI.WindowTitle = $Script:PrevTitle
+    SetTitle -Title $Script:PrevTitle
     $Script:PrevTitle = ""
 }
