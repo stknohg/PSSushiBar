@@ -1,24 +1,4 @@
-﻿# private function
-function Test-Environment {
-    # this module supports only desktop edition
-    Set-StrictMode -Version 2.0
-    try {
-        if ($PSVersionTable.PSEdition -eq "Desktop") {
-            return $true
-        }
-        return $false
-    }
-    catch {
-        # PS5.1 earlier(=Desktop Edition)
-        return $true
-    }
-}
-if (-not (Test-Environment)) {
-    Write-Warning "[PSSushiBar]This environment is not supported."
-    return
-}
-
-$Script:Timer = New-Object System.Timers.Timer
+﻿$Script:Timer = New-Object System.Timers.Timer
 $Script:EventID = "_SushiBarTimer"
 $Script:PrevTitle = ""
 $Script:SushiCount = 0
